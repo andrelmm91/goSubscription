@@ -2,6 +2,7 @@ package main
 
 import (
 	"database/sql"
+	"encoding/gob"
 	"fmt"
 	"log"
 	"net/http"
@@ -130,6 +131,7 @@ func connectToDB() *sql.DB {
 /////////////////////////////////////////////
 
 func initSession() *scs.SessionManager {
+	gob.Register(data.User{}) // store user in the session
 	// set up Session
 	session := scs.New()
 	session.Store = redisstore.New(initRedis())
