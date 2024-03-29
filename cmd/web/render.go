@@ -7,7 +7,7 @@ import (
 	"time"
 )
 
-var pathToTemplates = "./cmd/web/templates"
+var pathToTemplates = "./templates" // check dockerfile to ensure templates are copied to the image
 
 type TemplateData struct {
 	StringMap     map[string]string
