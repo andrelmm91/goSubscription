@@ -53,6 +53,10 @@ func main() {
 	}
 
 	// set up mails
+	// create the email content and setup
+	app.Mailer = app.createMail()
+	//listen for emails
+	go app.listenForEmail()
 
 	// listen for signals
 	go app.listenForShutDown()
@@ -172,5 +176,32 @@ func (app *Config) shutdown() {
 	// block waitgroup is empty
 	app.Wait.Wait()
 
+	app.Mailer.DoneChan <- true
+
 	app.InfoLog.Println("closing channels and shutting down application..")
+	close(app.Mailer.MailerChan)
+	close(app.Mailer.ErrorChan)
+	close(app.Mailer.DoneChan)
+}
+
+func (app *Config) createMail() Mail {
+	// create channels
+	errorChan := make(chan error)
+	mailerChan := make(chan Message)
+	mailerDoneChan := make(chan bool)
+
+	m := Mail{
+		Domain: "mailhog",
+		Host: "mailhog",
+		Port: 1025,
+		Encryption: "none",
+		FromAddress: "info@mycompany.com",
+		FromName: "info",
+		Wait: app.Wait,
+		ErrorChan: errorChan,
+		MailerChan: mailerChan,
+		DoneChan: mailerDoneChan,
+	}
+
+	return m
 }
