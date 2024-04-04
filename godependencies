@@ -13,5 +13,9 @@ go get github.com/go-chi/chi/v5
 go get github.com/vanng822/go-premailer/premailer
 go get github.com/xhit/go-simple-mail/v2
 
-//
-github.com/bwmarrin/go-alone
+// generate authkey for authentication
+go get github.com/bwmarrin/go-alone
+
+// generate pdf
+go get github.com/phpdave11/gofpdf // create
+go get github.com/phpdave11/gofpdf/contrib/gofpdi //read

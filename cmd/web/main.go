@@ -50,19 +50,36 @@ func main() {
 		ErrorLog: errorLog,
 		Wait: &wg,
 		Models: data.New(db),
+		ErrorChan: make(chan error),
+		ErrorChanDone: make(chan bool),
 	}
 
 	// set up mails
 	// create the email content and setup
 	app.Mailer = app.createMail()
+
 	//listen for emails
 	go app.listenForEmail()
 
 	// listen for signals
 	go app.listenForShutDown()
 
+	// listen for errors
+	go app.listenForErrors()
+
 	// listen for web connection
 	app.serve()
+}
+
+func (app *Config) listenForErrors() {
+	for {
+		select {
+		case err := <- app.ErrorChan:
+			app.ErrorLog.Println(err)
+		case <- app.ErrorChanDone:
+			return
+		}
+	}
 }
 
 func (app *Config) serve() {
@@ -158,6 +175,7 @@ func initRedis() *redis.Pool {
 	return redisPool
 }
 
+// concurrent function to stop the app with these signals
 func (app *Config) listenForShutDown() {
 	quit := make(chan os.Signal, 1)
 	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
@@ -169,6 +187,7 @@ func (app *Config) listenForShutDown() {
 	os.Exit(0)
 }
 
+// shut down the channals and application
 func (app *Config) shutdown() {
 	//perform any cleanup tasks
 	app.InfoLog.Println("run cleanup tasks")
@@ -177,13 +196,17 @@ func (app *Config) shutdown() {
 	app.Wait.Wait()
 
 	app.Mailer.DoneChan <- true
+	app.ErrorChanDone <- true
 
 	app.InfoLog.Println("closing channels and shutting down application..")
 	close(app.Mailer.MailerChan)
 	close(app.Mailer.ErrorChan)
 	close(app.Mailer.DoneChan)
+	close(app.ErrorChan)
+	close(app.ErrorChanDone)
 }
 
+// create channels for listen and email data struct
 func (app *Config) createMail() Mail {
 	// create channels
 	errorChan := make(chan error)
