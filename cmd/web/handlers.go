@@ -224,7 +224,7 @@ func (app *Config) SubscribeToPlan(w http.ResponseWriter, r *http.Request) {
 		defer app.Wait.Done()
 
 		pdf := app.generateManual(user, plan)
-		err := pdf.OutputFileAndClose(fmt.Sprintf("/tmp/%d_Manual.pdf", user.ID))
+		err := pdf.OutputFileAndClose(fmt.Sprintf("./tmp/%d_Manual.pdf", user.ID))
 		if err != nil {
 			// send the error to a channel
 			app.ErrorChan <- err
@@ -235,7 +235,7 @@ func (app *Config) SubscribeToPlan(w http.ResponseWriter, r *http.Request) {
 			Subject: "Your Manual",
 			Data: "Your user manual is attached",
 			AttachmentMap: map[string]string{
-				"Manual.pdf": fmt.Sprintf("./tmp/%d_manual.pdf", user.ID),
+				"Manual.pdf": fmt.Sprintf("./tmp/%d_Manual.pdf", user.ID),
 			},
 		}
 
@@ -247,6 +247,21 @@ func (app *Config) SubscribeToPlan(w http.ResponseWriter, r *http.Request) {
 	}()
 
 	// subscribe the user to an account
+	err = app.Models.Plan.SubscribeUserToPlan(user, *plan)
+	if err != nil {
+		app.Session.Put(r.Context(), "error", "Error subscribing to a plan")
+		http.Redirect(w, r, "/members/plan", http.StatusSeeOther)
+		return
+	}
+
+	u, err := app.Models.User.GetOne(user.ID)
+	if err != nil {
+		app.Session.Put(r.Context(), "error", "Error subscribing to a plan")
+		http.Redirect(w, r, "/members/plan", http.StatusSeeOther)
+		return
+	}
+
+	app.Session.Put(r.Context(), "user", u)
 
 	// redirect
 	app.Session.Put(r.Context(), "flash", "Subscribed")
@@ -273,7 +288,7 @@ func (app *Config) generateManual(u data.User, plan *data.Plan) *gofpdf.Fpdf {
 	pdf.SetFont("Arial", "", 12)
 	pdf.MultiCell(0, 4, fmt.Sprintf("%s %s", u.FirstName, u.LastName), "", "C", false)
 	pdf.Ln(5)
-	pdf.MultiCell(0, 4, fmt.Sprintf("%s user Guide"), "", "C", false)
+	pdf.MultiCell(0, 4, fmt.Sprintf("%s user Guide", plan.PlanName), "", "C", false)
 
 	return pdf
 }

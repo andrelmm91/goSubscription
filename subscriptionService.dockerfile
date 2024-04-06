@@ -21,6 +21,8 @@ RUN mkdir /app
 # Copy the binary from the build stage to the runtime image
 COPY subscriptionService /app
 COPY cmd/web/templates /templates
+COPY pdf /pdf
+COPY tmp /tmp
 
 # Command to run the executable
 CMD ["/app/subscriptionService"]
